@@ -2,7 +2,7 @@
 
 A production-ready RAG (Retrieval-Augmented Generation) system with decentralized, verifiable document storage using Ceramic Network and IPFS.
 
-## 🎯 Overview
+## Overview
 
 This workspace integrates [Docling](https://github.com/DS4SD/docling) document processing with:
 - **Ceramic Network** for signed, mutable document streams
@@ -12,14 +12,14 @@ This workspace integrates [Docling](https://github.com/DS4SD/docling) document p
 
 ### Key Features
 
-✅ **Verifiable Provenance** - Every chunk signed with DID  
-✅ **Mutable History** - Update documents while preserving audit trail  
-✅ **Decentralized Storage** - Content on IPFS, metadata on Ceramic  
-✅ **Fast Retrieval** - PGVector for sub-millisecond similarity search  
-✅ **Multi-format Support** - PDF, DOCX, HTML, Audio via Docling  
-✅ **Production Ready** - Docker, K8s, monitoring, security
+ **Verifiable Provenance** - Every chunk signed with DID  
+ **Mutable History** - Update documents while preserving audit trail  
+ **Decentralized Storage** - Content on IPFS, metadata on Ceramic  
+ **Fast Retrieval** - PGVector for sub-millisecond similarity search  
+ **Multi-format Support** - PDF, DOCX, HTML, Audio via Docling  
+ **Production Ready** - Docker, K8s, monitoring, security
 
-## 📁 Workspace Structure
+## Workspace Structure
 
 ```
 docling-dltknowlagebase/
@@ -57,7 +57,7 @@ docling-dltknowlagebase/
 └── DEPLOYMENT.md               # Production deployment (12k words)
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -103,7 +103,7 @@ python -m ingestion.ingest --documents ./documents
 
 See [QUICKSTART.md](QUICKSTART.md) for detailed manual setup instructions.
 
-## 📖 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -113,7 +113,7 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed manual setup instructions.
 | **[ceramic-service/README.md](ceramic-service/README.md)** | Ceramic service API docs |
 | **[docling-rag-agent/README.md](docling-rag-agent/README.md)** | RAG agent documentation |
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -178,7 +178,7 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed manual setup instructions.
     └───────────────────────┘
 ```
 
-## 🔑 Key Concepts
+## Key Concepts
 
 ### Ceramic Streams
 
@@ -211,7 +211,7 @@ Benefits:
 - Key rotation capability
 - Cryptographic verification
 
-## 🧪 Testing
+## Testing
 
 ### Test Ceramic Service
 
@@ -267,7 +267,7 @@ ENABLE_CERAMIC_STREAMS=true
 
 See [.env.example](docling-rag-agent/.env.example) for complete configuration.
 
-## 📊 Monitoring
+## Monitoring
 
 ### Health Checks
 
@@ -291,7 +291,7 @@ psql $DATABASE_URL -c "SELECT 1"
 
 See [DEPLOYMENT.md](DEPLOYMENT.md#monitoring-and-observability) for Prometheus/Grafana setup.
 
-## 🛡️ Security
+## Security
 
 - ✅ **DID seed** stored in environment/KMS (never in code)
 - ✅ **Network isolation** in Docker/Kubernetes
@@ -301,7 +301,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md#monitoring-and-observability) for Prometheus/G
 
 See [DEPLOYMENT.md](DEPLOYMENT.md#security-setup) for production security setup.
 
-## 🚢 Deployment
+## Deployment
 
 ### Docker Compose
 
@@ -326,7 +326,7 @@ sudo systemctl start ceramic-service
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
 
-## 💡 Use Cases
+## Use Cases
 
 1. **Document Provenance**: Prove authenticity and ownership
 2. **Compliance**: Immutable audit trail for regulations
@@ -334,44 +334,11 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
 4. **Decentralized Knowledge**: Resistant to single points of failure
 5. **Version Tracking**: See document evolution over time
 
-## 🤝 Contributing
 
-Contributions welcome! Please:
 
-1. Read [DEVELOPMENT.md](ceramic-sdk/DEVELOPMENT.md)
-2. Follow existing code style
-3. Add tests for new features
-4. Update documentation
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE)
-
-## 🙏 Acknowledgments
 
 - [Docling](https://github.com/DS4SD/docling) - Document processing
 - [Ceramic Network](https://ceramic.network/) - Decentralized streams
 - [IPFS](https://ipfs.tech/) - Content addressing
 - [PGVector](https://github.com/pgvector/pgvector) - Vector search
 
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/repo/issues)
-- **Docs**: See documentation links above
-- **Community**: [Discord](#) (if applicable)
-
-## 🗺️ Roadmap
-
-- [x] Phase 1: Design & Schema
-- [x] Phase 2: TypeScript Ceramic Service
-- [x] Phase 3: Python Integration
-- [x] Phase 4: Testing
-- [x] Phase 5: Documentation & Deployment
-- [ ] Phase 6: ComposeDB Migration
-- [ ] Phase 7: Multi-DID Support
-- [ ] Phase 8: Stream Subscriptions
-- [ ] Phase 9: Advanced Query Features
-
----
-
-**Built with ❤️ using Docling, Ceramic, IPFS, and PostgreSQL**
