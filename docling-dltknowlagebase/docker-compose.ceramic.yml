@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with PGVector extension
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: docling-postgres
+    environment:
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpass123
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docling-rag-agent/sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raguser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ceramic One node
+  ceramic:
+    image: public.ecr.aws/r5b3e0r5/3box/ceramic-one:latest-debug
+    container_name: docling-ceramic
+    environment:
+      CERAMIC_ONE_BIND_ADDRESS: 0.0.0.0:5101
+      CERAMIC_ONE_EXPERIMENTAL_FEATURES: "true"
+      CERAMIC_ONE_FLIGHT_SQL_BIND_ADDRESS: 0.0.0.0:5102
+      CERAMIC_ONE_LOG_FORMAT: single-line
+      CERAMIC_ONE_NETWORK: in-memory
+      CERAMIC_ONE_AGGREGATOR: "true"
+      CERAMIC_ONE_OBJECT_STORE_URL: file://./data
+    ports:
+      - "5101:5101"
+      - "5102:5102"
+    volumes:
+      - ceramic_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5101/ceramic/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ceramic Service (TypeScript)
+  ceramic-service:
+    build:
+      context: ./ceramic-service
+      dockerfile: Dockerfile
+    container_name: docling-ceramic-service
+    environment:
+      - CERAMIC_URL=http://ceramic:5101
+      - AGENT_DID_SEED_BASE64=${AGENT_DID_SEED_BASE64}
+      - IPFS_PINNING_SERVICE=${IPFS_PINNING_SERVICE:-pinata}
+      - PINATA_JWT=${PINATA_JWT}
+      - PINATA_API_KEY=${PINATA_API_KEY}
+      - PINATA_API_SECRET=${PINATA_API_SECRET}
+      - IPFS_API_URL=${IPFS_API_URL:-http://ipfs:5001}
+      - PORT=3001
+      - LOG_LEVEL=info
+    ports:
+      - "3001:3001"
+    depends_on:
+      ceramic:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Local IPFS node (alternative to Pinata)
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: docling-ipfs
+    environment:
+      - IPFS_PROFILE=server
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs_data:/data/ipfs
+    profiles:
+      - with-ipfs
+
+volumes:
+  postgres_data:
+  ceramic_data:
+  ipfs_data:

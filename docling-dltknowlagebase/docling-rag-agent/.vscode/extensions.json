@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "ms-python.isort",
+        "charliermarsh.ruff",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-python.vscode-pylance",
+        "donjayamanne.python-environment-manager",
+        "ms-toolsai.jupyter"
+    ]
+}

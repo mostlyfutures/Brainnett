@@ -1,0 +1,97 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Configure OpenAI API Key",
+            "type": "shell",
+            "command": "python3",
+            "args": ["setup_config.py"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Interactive setup for OpenAI API key and environment configuration"
+        },
+        {
+            "label": "Setup Environment",
+            "type": "shell",
+            "command": "uv",
+            "args": ["sync"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Install project dependencies using uv"
+        },
+        {
+            "label": "Configure Database",
+            "type": "shell",
+            "command": "python3",
+            "args": ["setup_database.py"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Interactive database configuration (Supabase, Neon, Local PostgreSQL)"
+        },
+        {
+            "label": "Run RAG Agent",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "python", "cli.py"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "dependsOn": "Check Environment",
+            "detail": "Run the Docling RAG Agent CLI"
+        },
+        {
+            "label": "Check Environment",
+            "type": "shell",
+            "command": "python3",
+            "args": ["check_config.py"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Check if environment variables are properly configured"
+        },
+        {
+            "label": "Setup Complete Project",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Setup Environment",
+                "Configure OpenAI API Key",
+                "Configure Database",
+                "Check Environment"
+            ],
+            "group": "build",
+            "detail": "Complete project setup including dependencies, API key, and database configuration"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+[
+    {
+        "key": "ctrl+shift+r",
+        "command": "workbench.action.tasks.runTask",
+        "args": "Configure OpenAI API Key",
+        "when": "workspaceFolderCount > 0"
+    },
+    {
+        "key": "ctrl+shift+d",
+        "command": "workbench.action.tasks.runTask",
+        "args": "Configure Database",
+        "when": "workspaceFolderCount > 0"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "workbench.action.tasks.runTask", 
+        "args": "Run RAG Agent",
+        "when": "workspaceFolderCount > 0"
+    }
+]

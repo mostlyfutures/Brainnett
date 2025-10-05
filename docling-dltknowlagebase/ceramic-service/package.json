@@ -1,0 +1,48 @@
+{
+  "name": "ceramic-service",
+  "version": "1.0.0",
+  "description": "Ceramic Network service for Docling RAG integration",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/"
+  },
+  "keywords": [
+    "ceramic",
+    "ipfs",
+    "did",
+    "rag",
+    "docling"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ceramic-sdk/events": "workspace:*",
+    "@ceramic-sdk/http-client": "workspace:*",
+    "@ceramic-sdk/identifiers": "workspace:*",
+    "@ceramic-sdk/model-client": "workspace:*",
+    "@ceramic-sdk/model-instance-client": "workspace:*",
+    "@ceramic-sdk/model-protocol": "workspace:*",
+    "@didtools/key-did": "^1.0.0",
+    "dids": "^5.0.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "axios": "^1.6.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

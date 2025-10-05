@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run RAG Agent CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PKG_CONFIG_PATH": "/opt/homebrew/lib/pkgconfig",
+                "CPPFLAGS": "-I/opt/homebrew/include -I/opt/homebrew/include/opus",
+                "LDFLAGS": "-L/opt/homebrew/lib"
+            },
+            "preLaunchTask": "Check Environment",
+            "stopOnEntry": false,
+            "justMyCode": true
+        },
+        {
+            "name": "Debug RAG Agent CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PKG_CONFIG_PATH": "/opt/homebrew/lib/pkgconfig",
+                "CPPFLAGS": "-I/opt/homebrew/include -I/opt/homebrew/include/opus",
+                "LDFLAGS": "-L/opt/homebrew/lib"
+            },
+            "args": ["--verbose"],
+            "preLaunchTask": "Check Environment",
+            "stopOnEntry": false,
+            "justMyCode": false
+        }
+    ]
+}

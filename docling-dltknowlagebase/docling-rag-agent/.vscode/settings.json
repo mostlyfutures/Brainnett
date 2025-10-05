@@ -1,0 +1,25 @@
+{
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        ".venv": false
+    },
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "terminal.integrated.env.osx": {
+        "PKG_CONFIG_PATH": "/opt/homebrew/lib/pkgconfig",
+        "CPPFLAGS": "-I/opt/homebrew/include -I/opt/homebrew/include/opus",
+        "LDFLAGS": "-L/opt/homebrew/lib"
+    },
+    "terminal.integrated.env.linux": {
+        "PKG_CONFIG_PATH": "/usr/lib/pkgconfig:/usr/share/pkgconfig"
+    }
+}
