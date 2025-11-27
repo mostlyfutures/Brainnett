@@ -4,6 +4,11 @@ Brainnet Terminal UI (TUI) - Blue-themed terminal interface
 Two main user stories:
 1. Quick Score View: Select market → Get score 0-100 (0=short, 100=long)
 2. Detailed Stats: Press 2 for detailed analysis, 0 to return to menu
+
+Performance optimizations:
+- Cached model instances (ConvNeXt, ResearchAgent)
+- Fast mode skips LLM calls for quick scoring
+- Uses numpy vectorization for GAF features
 """
 
 import sys
@@ -11,6 +16,48 @@ import os
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+
+# ============================================================================
+# MODEL CACHE - Load once, use many times
+# ============================================================================
+_MODEL_CACHE = {
+    "research_agent": None,
+    "convnext": None,
+    "reasoning_agent": None,
+    "initialized": False,
+}
+
+
+def _get_cached_models(skip_llm: bool = True):
+    """
+    Get cached model instances for fast inference.
+    
+    First call loads models (~3-5s), subsequent calls are instant.
+    """
+    global _MODEL_CACHE
+    
+    if not _MODEL_CACHE["initialized"]:
+        try:
+            from brainnet.agents import ResearchAgent, _CONVNEXT_AVAILABLE
+            
+            # Cache ResearchAgent (lightweight)
+            _MODEL_CACHE["research_agent"] = ResearchAgent()
+            
+            # Cache ConvNeXt (heavy - 28M params)
+            if _CONVNEXT_AVAILABLE:
+                from brainnet.agents import ConvNeXtPredictor
+                _MODEL_CACHE["convnext"] = ConvNeXtPredictor(device="auto")
+            
+            # Only load ReasoningAgent if needed (requires LLM)
+            if not skip_llm:
+                from brainnet.agents import ReasoningAgent
+                _MODEL_CACHE["reasoning_agent"] = ReasoningAgent()
+            
+            _MODEL_CACHE["initialized"] = True
+        except Exception as e:
+            print(f"Model cache init failed: {e}")
+    
+    return _MODEL_CACHE
 
 
 # ANSI color codes for BLUE theme
@@ -138,9 +185,14 @@ def draw_header():
     print()
 
 
-def run_analysis(symbol: str, name: str) -> AnalysisResult:
+def run_analysis(symbol: str, name: str, fast_mode: bool = True) -> AnalysisResult:
     """
     Run market analysis and return score.
+    
+    Args:
+        symbol: Trading symbol
+        name: Display name
+        fast_mode: Skip LLM calls for faster scoring (default True)
     
     Score interpretation:
     - 0-20: Strong Short signal
@@ -152,26 +204,38 @@ def run_analysis(symbol: str, name: str) -> AnalysisResult:
     - 80-100: Strong Long signal
     """
     c = Colors
+    start_time = time.time()
+    
     print(f"{c.CYAN}  ─────────────────────────────────────────────────────{c.RESET}")
     print(f"{c.WHITE}{c.BOLD}     Analyzing {name} ({symbol})...{c.RESET}")
     print(f"{c.CYAN}  ─────────────────────────────────────────────────────{c.RESET}")
     print()
     
-    # Import analysis modules
+    # Get cached models (fast after first load)
+    cache = _get_cached_models(skip_llm=fast_mode)
+    research = cache.get("research_agent")
+    convnext = cache.get("convnext")
+    
+    # Import yfinance
     try:
         import yfinance as yf
-        from brainnet.agents import ResearchAgent, ReasoningAgent, _CONVNEXT_AVAILABLE
+        from brainnet.agents import _CONVNEXT_AVAILABLE
     except ImportError as e:
         print(f"{c.RED}  ✗ Import error: {e}{c.RESET}")
-        # Return dummy result
         return AnalysisResult(
             symbol=symbol, score=50, price=0.0, direction="NEUTRAL",
             confidence=0.0, regime="unknown", volatility="unknown",
             trend_score=0.0, momentum=0.0, features={}, analysis_type="error"
         )
     
-    # Fetch data
-    print(f"{c.GRAY}     [1/3] Fetching market data...{c.RESET}")
+    # Re-initialize research agent if not cached
+    if research is None:
+        from brainnet.agents import ResearchAgent
+        research = ResearchAgent()
+    
+    # Step 1: Fetch data
+    step_start = time.time()
+    print(f"{c.GRAY}     [1/3] Fetching market data...{c.RESET}", end="", flush=True)
     try:
         data = yf.download(symbol, period="1d", interval="5m", progress=False)
         if data.empty:
@@ -183,51 +247,48 @@ def run_analysis(symbol: str, name: str) -> AnalysisResult:
         except:
             price = float(data['Close'].iloc[-1])
         
-        print(f"{c.GREEN}     ✓ {len(data)} bars | Price: ${price:,.2f}{c.RESET}")
+        elapsed = time.time() - step_start
+        print(f"\r{c.GREEN}     ✓ {len(data)} bars | ${price:,.2f} ({elapsed:.1f}s){c.RESET}")
     except Exception as e:
-        print(f"{c.RED}     ✗ Data fetch failed: {e}{c.RESET}")
+        print(f"\r{c.RED}     ✗ Data fetch failed: {e}{c.RESET}")
         return AnalysisResult(
             symbol=symbol, score=50, price=0.0, direction="NEUTRAL",
             confidence=0.0, regime="unknown", volatility="unknown",
             trend_score=0.0, momentum=0.0, features={}, analysis_type="error"
         )
     
-    # Initialize agents
-    research = ResearchAgent()
-    reasoning = ReasoningAgent()
-    
-    # Run GAF analysis
-    print(f"{c.GRAY}     [2/3] Running GAF pattern analysis...{c.RESET}")
+    # Step 2: GAF features (fast - no LLM)
+    step_start = time.time()
+    print(f"{c.GRAY}     [2/3] Extracting GAF features...{c.RESET}", end="", flush=True)
     try:
-        analysis = research.research(data)
-        features = analysis.get('features', {})
-        scores = analysis.get('scores', {})
+        # Extract close prices
+        close = data['Close'].values.flatten()[-100:]
+        
+        # Fast path: extract GAF features directly (no LLM call)
+        features = research.extract_gaf_features(close)
         
         trend = features.get('trend_score', 0)
         momentum = features.get('momentum', 0)
         
-        print(f"{c.GREEN}     ✓ Trend: {trend:+.3f} | Momentum: {momentum:+.3f}{c.RESET}")
+        elapsed = time.time() - step_start
+        print(f"\r{c.GREEN}     ✓ Trend: {trend:+.3f} | Mom: {momentum:+.3f} ({elapsed:.1f}s){c.RESET}")
     except Exception as e:
-        print(f"{c.YELLOW}     ⚠ GAF analysis warning: {e}{c.RESET}")
+        print(f"\r{c.YELLOW}     ⚠ GAF warning: {e}{c.RESET}")
         features = {}
-        scores = {}
         trend = 0
         momentum = 0
     
-    # Try ConvNeXt if available
+    # Step 3: ConvNeXt prediction (uses cached model)
     regime = "unknown"
     volatility = "unknown"
     convnext_direction = "neutral"
     convnext_confidence = 0.0
-    analysis_type = "llm"
+    analysis_type = "gaf_features"
     
-    if _CONVNEXT_AVAILABLE:
-        print(f"{c.GRAY}     [3/3] Running ConvNeXt neural analysis...{c.RESET}")
+    if convnext is not None:
+        step_start = time.time()
+        print(f"{c.GRAY}     [3/3] ConvNeXt inference...{c.RESET}", end="", flush=True)
         try:
-            from brainnet.agents import ConvNeXtPredictor
-            convnext = ConvNeXtPredictor(device="auto")
-            
-            close = data['Close'].values.flatten()[-100:]
             gaf_rgb = research.generate_gaf_3channel(close)
             prediction = convnext.predict(gaf_rgb)
             
@@ -235,19 +296,31 @@ def run_analysis(symbol: str, name: str) -> AnalysisResult:
             volatility = prediction.volatility
             convnext_direction = prediction.direction
             convnext_confidence = prediction.direction_confidence
-            analysis_type = "ensemble"
+            analysis_type = "convnext"
             
-            print(f"{c.GREEN}     ✓ Regime: {regime} | Direction: {convnext_direction} ({convnext_confidence:.0%}){c.RESET}")
+            elapsed = time.time() - step_start
+            print(f"\r{c.GREEN}     ✓ {convnext_direction.upper()} ({convnext_confidence:.0%}) | {regime} ({elapsed:.1f}s){c.RESET}")
         except Exception as e:
-            print(f"{c.YELLOW}     ⚠ ConvNeXt skipped: {e}{c.RESET}")
+            print(f"\r{c.YELLOW}     ⚠ ConvNeXt: {e}{c.RESET}")
     else:
-        print(f"{c.GRAY}     [3/3] ConvNeXt not available, using LLM only...{c.RESET}")
+        print(f"{c.GRAY}     [3/3] ConvNeXt not loaded, using features only{c.RESET}")
     
-    # Compute confidence
-    try:
-        confidence = reasoning.compute_confidence(analysis.get('analysis', ''))
-    except:
-        confidence = 0.5
+    # Calculate confidence from features (no LLM call in fast mode)
+    if fast_mode:
+        # Heuristic confidence based on signal strength
+        signal_strength = abs(trend) + abs(momentum) + convnext_confidence
+        confidence = min(0.95, 0.4 + signal_strength * 0.3)
+    else:
+        # Full LLM confidence (slow)
+        try:
+            reasoning = cache.get("reasoning_agent")
+            if reasoning is None:
+                from brainnet.agents import ReasoningAgent
+                reasoning = ReasoningAgent()
+            analysis = research.research(data)
+            confidence = reasoning.compute_confidence(analysis.get('analysis', ''))
+        except:
+            confidence = 0.5
     
     # Calculate final score (0-100)
     # Base score from trend (maps -1..1 to 30..70)
