@@ -1,8 +1,13 @@
-# Brainnet 🧠
+# Brainnet
 
-**A hybrid-adaptive quant trading system powered exclusively by Microsoft Phi-3.5-Mini**
+**A hybrid-adaptive quant trading system powered by Phi-3.5-Mini + ConvNeXt-Tiny**
 
-Brainnet is a production-ready multi-agent trading brain that combines Gramian Angular Field (GAF) pattern recognition, LLM-as-a-judge confidence calibration, and persistent memory for adaptive market analysis.
+Brainnet is a production-ready multi-agent trading brain that combines:
+- **Gramian Angular Field (GAF)** pattern recognition
+- **ConvNeXt-Tiny** neural network for regime/direction/volatility prediction
+- **LLM-as-a-judge** confidence calibration
+- **pgvector** for high-performance vector memory
+- **Interactive TUI** with multi-timeframe analysis
 
 ---
 
@@ -266,9 +271,45 @@ print(f"Confidence: {result['confidence']:.3f}")
 print(f"Refinements: {result['refinements']}")
 ```
 
+### Interactive TUI (Recommended)
+
+Launch the interactive terminal interface:
+
+```bash
+brainnet gui
+```
+
+**Features:**
+- **Paginated Markets**: Crypto, Futures, ETFs, Commodities (use arrow keys)
+- **Multi-Timeframe**: 1m, 5m, 15m, 1h, 4h, 1d intervals
+- **Score Display**: 0-100 score (0=short, 100=long) with visual bar
+- **Detailed Stats**: Regime, volatility, GAF features, confidence
+
+```
+  ╔══════════════════════════════════════════════════════╗
+  ║                       BRAINNET                        ║
+  ╚══════════════════════════════════════════════════════╝
+
+     CRYPTO                 ◀ Page 1/4 ▶
+  ─────────────────────────────────────────────────────
+
+     [1]  BTC   -  Bitcoin
+     [2]  ETH   -  Ethereum
+     [3]  SOL   -  Solana
+     [4]  XRP   -  Ripple
+
+  ─────────────────────────────────────────────────────
+     Use arrow keys to navigate pages
+
+  > Select: 
+```
+
 ### Command Line
 
 ```bash
+# Launch interactive TUI
+brainnet gui
+
 # Single analysis
 python examples/gaf_trading_loop.py --symbol ES=F --single
 
@@ -607,16 +648,16 @@ Iteration 1 | 2024-01-15 09:30:00
 [4/5] Computing confidence...
     Confidence: 0.520
 
-    ⟳ Refinement 1/3
+    > Refinement 1/3
     New confidence: 0.680
 
-    ⟳ Refinement 2/3
+    > Refinement 2/3
     New confidence: 0.810
 
 [5/5] Decision...
 
-    📈 LONG | Conf: 0.81
-    ✓ Stored in memory
+    LONG | Conf: 0.81
+    Stored in memory
 ```
 
 ---
