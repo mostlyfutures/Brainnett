@@ -1,5 +1,8 @@
 """
-Mem0 integration with hybrid search for persistent cross-session memory
+Mem0 integration with pgvector for persistent cross-session memory
+
+Uses PostgreSQL with pgvector extension for high-performance vector similarity search.
+Falls back to SQLite for simple storage when PostgreSQL is not available.
 """
 
 import os
@@ -15,11 +18,25 @@ try:
 except ImportError:
     MEM0_AVAILABLE = False
 
+# Check pgvector availability
+PGVECTOR_AVAILABLE = False
+try:
+    import psycopg2
+    PGVECTOR_AVAILABLE = True
+except ImportError:
+    pass
+
 
 class MemoryManager:
     """
-    Memory manager using Mem0 for persistent cross-session memory.
-    Falls back to SQLite if Mem0 is not available or fails.
+    Memory manager using Mem0 with pgvector for persistent cross-session memory.
+    
+    Uses PostgreSQL with pgvector extension for:
+    - High-performance vector similarity search
+    - ACID compliance for trade data integrity
+    - Scalable storage for large memory sets
+    
+    Falls back to SQLite if PostgreSQL/pgvector is not available.
     """
 
     def __init__(
@@ -35,6 +52,7 @@ class MemoryManager:
         # Initialize Mem0 or fallback
         self.mem0_client = None
         self.use_fallback = False
+        self.pgvector_conn = None
 
         if MEM0_AVAILABLE:
             try:
@@ -50,7 +68,7 @@ class MemoryManager:
             self._init_sqlite_fallback()
 
     def _init_mem0(self):
-        """Initialize Mem0 client."""
+        """Initialize Mem0 client with pgvector backend."""
         mem0_config = {
             "llm": {
                 "provider": "openai",
@@ -70,26 +88,83 @@ class MemoryManager:
             }
         }
 
-        # Configure vector store based on settings
-        if self.config.get("memory_db") == "postgresql":
-            mem0_config["vector_store"] = {
-                "provider": "pgvector",
-                "config": {
-                    "connection_string": self.config.get("postgres_url", ""),
-                    "collection_name": "brainnet_memories",
-                }
+        # Get PostgreSQL connection string
+        postgres_url = self.config.get("postgres_url", "")
+        
+        # If no explicit postgres_url, try to construct from environment
+        if not postgres_url:
+            pg_host = os.getenv("PGVECTOR_HOST", "localhost")
+            pg_port = os.getenv("PGVECTOR_PORT", "5432")
+            pg_user = os.getenv("PGVECTOR_USER", "postgres")
+            pg_pass = os.getenv("PGVECTOR_PASSWORD", "")
+            pg_db = os.getenv("PGVECTOR_DB", "brainnet")
+            
+            if pg_pass:
+                postgres_url = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}"
+            else:
+                postgres_url = f"postgresql://{pg_user}@{pg_host}:{pg_port}/{pg_db}"
+
+        # Configure pgvector as the vector store
+        # pgvector is preferred for:
+        # - Better query performance with IVFFlat/HNSW indexes
+        # - ACID compliance for financial data
+        # - Native PostgreSQL integration
+        mem0_config["vector_store"] = {
+            "provider": "pgvector",
+            "config": {
+                "connection_string": postgres_url,
+                "collection_name": self.config.get("pgvector_collection", "brainnet_memories"),
+                "embedding_model_dims": self.config.get("embedding_dims", 768),
             }
-        else:
-            # Use default (in-memory or file-based)
-            mem0_config["vector_store"] = {
-                "provider": "chroma",
-                "config": {
-                    "collection_name": "brainnet_memories",
-                    "path": str(Path(self.config.get("sqlite_path", "brainnet_memory")).parent / "chroma_db"),
-                }
-            }
+        }
+
+        # Initialize pgvector extension if we have direct connection
+        if PGVECTOR_AVAILABLE and postgres_url:
+            try:
+                self._init_pgvector_extension(postgres_url)
+            except Exception as e:
+                print(f"pgvector extension setup warning: {e}")
 
         self.mem0_client = Memory.from_config(mem0_config)
+    
+    def _init_pgvector_extension(self, connection_string: str):
+        """
+        Initialize pgvector extension and create necessary indexes.
+        
+        Creates the vector extension and optimized indexes for
+        high-performance similarity search.
+        """
+        import psycopg2
+        
+        conn = psycopg2.connect(connection_string)
+        conn.autocommit = True
+        cursor = conn.cursor()
+        
+        try:
+            # Enable pgvector extension
+            cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            
+            # Create optimized index for similarity search (if table exists)
+            # HNSW index provides better query performance for high-dimensional vectors
+            cursor.execute("""
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT FROM information_schema.tables 
+                               WHERE table_name = 'brainnet_memories') THEN
+                        -- Create HNSW index for fast approximate nearest neighbor search
+                        IF NOT EXISTS (SELECT 1 FROM pg_indexes 
+                                      WHERE indexname = 'brainnet_memories_embedding_idx') THEN
+                            CREATE INDEX brainnet_memories_embedding_idx 
+                            ON brainnet_memories 
+                            USING hnsw (embedding vector_cosine_ops)
+                            WITH (m = 16, ef_construction = 64);
+                        END IF;
+                    END IF;
+                END $$;
+            """)
+        finally:
+            cursor.close()
+            conn.close()
 
     def _init_sqlite_fallback(self):
         """Initialize SQLite fallback storage."""

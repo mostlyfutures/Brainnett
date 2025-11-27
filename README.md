@@ -33,7 +33,7 @@ Brainnet is a production-ready multi-agent trading brain that combines Gramian A
 | **Dual Mode Analysis** | Vision mode (with images) or Text mode (numerical features) |
 | **BSC Confidence Model** | Binary Symmetric Channel calibration for mathematically grounded confidence |
 | **Adaptive Refinement** | Confidence < 0.78 triggers memory-enriched re-analysis loops |
-| **Persistent Memory** | Mem0 integration stores trade outcomes across sessions |
+| **Persistent Memory** | Mem0 + pgvector for high-performance vector similarity search |
 | **Hot-Reload Strategies** | Generate and deploy trading strategies at runtime |
 | **Multi-Backend Support** | Works with LM Studio, Ollama, Azure ML, or Hugging Face API |
 | **LangGraph Orchestration** | Stateful multi-agent workflows with conditional routing |
@@ -113,6 +113,35 @@ cp .env.example .env
 # Edit .env with your settings
 ```
 
+### pgvector Setup (Required for Memory)
+
+Brainnet uses PostgreSQL with pgvector for vector similarity search:
+
+```bash
+# Option 1: Docker (Recommended)
+docker run -d --name pgvector \
+  -e POSTGRES_PASSWORD=brainnet \
+  -e POSTGRES_DB=brainnet \
+  -p 5432:5432 \
+  pgvector/pgvector:pg16
+
+# Option 2: Manual installation
+# Install PostgreSQL 14+, then:
+CREATE EXTENSION vector;
+
+# Verify installation
+psql -U postgres -d brainnet -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
+```
+
+Configure in `.env`:
+```bash
+PGVECTOR_HOST=localhost
+PGVECTOR_PORT=5432
+PGVECTOR_USER=postgres
+PGVECTOR_PASSWORD=brainnet
+PGVECTOR_DB=brainnet
+```
+
 ### LM Studio Setup (Recommended)
 
 1. Download [LM Studio](https://lmstudio.ai/)
@@ -150,8 +179,12 @@ USE_VISION=true
 | `AGENT_MAX_TOKENS` | `31000` | Maximum tokens per request |
 | `AGENT_TEMPERATURE` | `0.1` | Sampling temperature |
 | `USE_VISION` | `false` | Enable vision mode for GAF images |
-| `MEMORY_DB` | `sqlite` | Memory backend: `sqlite`, `postgresql` |
-| `POSTGRES_URL` | - | PostgreSQL connection string |
+| `MEMORY_DB` | `pgvector` | Memory backend: `pgvector`, `sqlite` |
+| `PGVECTOR_HOST` | `localhost` | PostgreSQL host |
+| `PGVECTOR_PORT` | `5432` | PostgreSQL port |
+| `PGVECTOR_USER` | `postgres` | PostgreSQL username |
+| `PGVECTOR_PASSWORD` | - | PostgreSQL password |
+| `PGVECTOR_DB` | `brainnet` | PostgreSQL database name |
 | `CONFIDENCE_THRESHOLD` | `0.78` | Minimum confidence for trading |
 | `MAX_REFINEMENTS` | `3` | Maximum refinement iterations |
 
@@ -168,9 +201,14 @@ AGENT_MAX_TOKENS=31000
 AGENT_TEMPERATURE=0.1
 USE_VISION=false
 
-# Memory
-MEMORY_DB=sqlite
-CHROMA_PERSIST_DIR=./data/chroma
+# Memory (pgvector - PostgreSQL with vector extension)
+MEMORY_DB=pgvector
+PGVECTOR_HOST=localhost
+PGVECTOR_PORT=5432
+PGVECTOR_USER=postgres
+PGVECTOR_PASSWORD=your_password
+PGVECTOR_DB=brainnet
+PGVECTOR_DB=brainnet
 
 # Trading
 CONFIDENCE_THRESHOLD=0.78
@@ -374,7 +412,13 @@ print(f"Volatility: {prediction.volatility}")
 
 ### 6. MemoryManager (`core/memory.py`)
 
-Persistent cross-session memory with Mem0:
+Persistent cross-session memory with Mem0 + pgvector:
+
+**Why pgvector?**
+- High-performance vector similarity search with HNSW indexes
+- ACID compliance for trade data integrity
+- Native PostgreSQL integration
+- Scales to millions of vectors
 
 ```python
 from brainnet.core import MemoryManager, load_config
