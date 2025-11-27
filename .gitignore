@@ -165,7 +165,6 @@ temp/
 *.tmp
 *.bak
 
-# PRP documents (keep templates, ignore filled ones)
-PRPs/*.md
-!PRPs/PRP_*_Template.md
+# Documentation (keep templates, ignore drafts)
+docs/drafts/
 

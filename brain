@@ -1,7 +1,0 @@
-#!/bin/bash
-# 🧠 BRAINNET - One-word launcher
-# Just type: ./brain
-
-cd "$(dirname "$0")"
-source brainnet/.venv/bin/activate 2>/dev/null || source .venv/bin/activate 2>/dev/null
-python -m brainnet.services.main gui

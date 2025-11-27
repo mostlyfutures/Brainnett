@@ -1,0 +1,13 @@
+#!/bin/bash
+# 🧠 BRAINNET - One-word launcher
+# Just type: ./scripts/brain (or add scripts/ to PATH)
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+source .venv/bin/activate 2>/dev/null || source venv/bin/activate 2>/dev/null
+
+# Add all package sources and shared to PYTHONPATH
+export PYTHONPATH="$PROJECT_ROOT/packages/brainnet/src:$PROJECT_ROOT/shared:$PYTHONPATH"
+python -m brainnet.services.main gui
