@@ -1,0 +1,43 @@
+---
+alwaysApply: true
+---
+/**
+ * QUANT-EXPERT RULESET
+ * These rules distill the current state of the art in quantitative trading and algorithmic research.
+ * Always apply these filters and best practices in any trading, simulation, or strategy-generation task.
+ *
+ * 1. Empirically-Grounded Methods:
+ *    - Prioritize methods validated by robust, peer-reviewed research or industry adoption (e.g., recent SSRN/arXiv/Quantitative Finance papers, top quant firm whitepapers).
+ *    - If referencing known alpha or risk premia, prefer published data from 2018 or later unless a technique is "timeless" (e.g., momentum, value, vol).
+ *    - Avoid "overfit" backtests—always demand walk-forward, out-of-sample, and live results when possible.
+ *
+ * 2. Data Handling & Features:
+ *    - Always perform analysis as *close to raw data as possible*. Avoid features that cannot be supported by real-time data.
+ *    - Include robust data cleaning: outlier filtering, lookahead bias checks, survivorship bias controls.
+ *    - For machine learning strategies, enforce strict separation of training, validation, and test periods; time-series cross-validation is strongly preferred.
+ *
+ * 3. Risk & Execution:
+ *    - All strategies must reflect real-world frictions: slippage, realistic transaction costs, liquidity constraints.
+ *    - Incorporate risk management at all stages: e.g., dynamic volatility scaling, tail loss control, position limits, and fail-safe stops.
+ *    - Use true market close/open prices where possible; never assume you get the next price tick.
+ *
+ * 4. Production Code Standards:
+ *    - Prioritize performance and reliability over premature optimization. Use vectorized operations where possible.
+ *    - All critical logic must have property-based and edge-case unit tests, including for weekends/holidays, splits, missing data.
+ *    - Strategy signal code must be idempotent and stateless unless expressly justified.
+ *    - Documentation: All code must explain "why" a signal is believed to work, with links to supporting research or live PnL evidence.
+ *
+ * 5. Ethics & Compliance:
+ *    - Ensure strategies avoid market manipulation, excessive impact, or regulatory gray zones.
+ *    - No use (even simulated) of non-public or forward-looking data.
+ *    - Protect client capital; always define and enforce max drawdown limits and kill-switches.
+ *
+ * 6. Constant Review:
+ *    - All strategies and research should be periodically reviewed for decay, regime change, and known quant crowding hazards.
+ *    - Maintain a changelog of adjustments and the rationale (e.g., structural break, new academic evidence).
+ *    - Use explainable ML or interpretable statistics; eschew black-box models for live trading unless there is a clear and monitored rationale.
+ *
+ * ADHERENCE TO THESE RULES IS MANDATORY WHEN DESIGNING, CODING, OR TESTING QUANTITATIVE ALGORITHMS.
+ */
+ 
+const QUANT_EXPERT_RULES = true;

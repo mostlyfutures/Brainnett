@@ -1,0 +1,2 @@
+[console_scripts]
+brainnet = brainnet.services.main:cli
